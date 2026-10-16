@@ -1,0 +1,66 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-koulivand
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SITE_URL: https://koulivand.ir
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build static export
+        run: npm run build
+
+      - name: Check export
+        run: npm run check-export
+
+      - name: Publish to modeno
+        env:
+          MODENO_HOST: ${{ secrets.MODENO_HOST }}
+          MODENO_SSH_KEY: ${{ secrets.MODENO_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${MODENO_HOST}" || -z "${MODENO_SSH_KEY}" ]]; then
+            echo "Repository secrets MODENO_HOST and MODENO_SSH_KEY are required." >&2
+            exit 1
+          fi
+          install -d -m 700 "${HOME}/.ssh"
+          printf '%s\n' "${MODENO_SSH_KEY}" > "${HOME}/.ssh/id_ed25519"
+          chmod 600 "${HOME}/.ssh/id_ed25519"
+          ssh-keyscan -H "${MODENO_HOST}" >> "${HOME}/.ssh/known_hosts"
+          SSH=(ssh -i "${HOME}/.ssh/id_ed25519" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes)
+          "${SSH[@]}" "root@${MODENO_HOST}" "mkdir -p /opt/koulivand/blog/html"
+          tar -C out -czf - . | "${SSH[@]}" "root@${MODENO_HOST}" "find /opt/koulivand/blog/html -mindepth 1 -delete && tar -C /opt/koulivand/blog/html -xzf - && find /opt/koulivand/blog/html -type d -exec chmod 755 {} + && find /opt/koulivand/blog/html -type f -exec chmod 644 {} +"
+          tar -C deploy -czf - nginx.conf docker-compose.yml proxy.conf publish.sh | "${SSH[@]}" "root@${MODENO_HOST}" "tar -C /opt/koulivand/blog -xzf -"
+          "${SSH[@]}" "root@${MODENO_HOST}" "bash /opt/koulivand/blog/publish.sh"

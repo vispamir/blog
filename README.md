@@ -1,0 +1,93 @@
+# یادداشت‌های امیر کولیوند
+
+A Persian, RTL personal blog using Next.js App Router, strict TypeScript, Tailwind CSS and local MDX. No backend, database, external CMS or runtime API calls. The included articles are editable sample writing, not claims about the author's experience.
+
+## Run locally
+
+Use Node.js 22.13+ (Node.js 24 LTS recommended) and npm.
+
+```sh
+npm ci
+npm run dev
+```
+
+Open http://localhost:3000. For a production preview:
+
+```sh
+npm test
+npm run typecheck
+npm run build
+npm run preview
+```
+
+`npm run build` exports the full website to `out/`. Production needs only a static file server, never `next start`.
+
+## Add or edit an article
+
+Create a trusted, local `.mdx` file under `content/articles/`. MDX can execute code during build: do not load untrusted submissions.
+
+```yaml
+---
+title: "عنوان فارسی"
+description: "خلاصه‌ی کوتاه و روشن"
+slug: "my-new-article"
+category: "software-engineering"
+date: "2026-10-17"
+updatedAt: "2026-10-18"
+tags: ["طراحی سیستم"]
+featured: false
+draft: false
+---
+```
+
+Required fields: title, description, slug, category and date. Quote ISO dates. Slugs must be unique lowercase Latin words separated by hyphens. Categories: `software-engineering`, `job-market`, `business-ideas`. Optional fields: `updatedAt`, positive integer `readingTime`, tags, featured, draft and a local `cover` path under `/images/`. Reading time is calculated at 180 words/minute when omitted. Invalid metadata and duplicate slugs fail the build. Drafts appear in development and are excluded from production.
+
+Use H2/H3 headings for the automatic table of contents. Markdown tables, lists, blockquotes and fenced code blocks are supported. Use an explicit code language such as `typescript`. Highlighting runs at build time; only the copy control needs browser JavaScript. Put local images in `public/images/`, pre-optimize them and provide meaningful alt text. The homepage uses locally bundled, generated Zen photography optimized as WebP. Vazirmatn is bundled through Fontsource and its OFL license is included in `public/fonts-LICENSE.txt`.
+
+## Edit identity and design
+
+- Site identity and URL: `src/lib/site.ts`.
+- About content: `src/app/about/page.tsx`; replace the contact placeholder with your real email/social links.
+- Category names and descriptions: `src/lib/categories.ts`.
+- Design tokens and responsive styles: `src/app/globals.css`.
+
+The initial release uses a light theme. No theme, newsletter, comments or contact-submission controls are present.
+
+## Search
+
+`/articles/` and `/search/` share a local index of metadata and stripped article text. Search matches all query words across title, description, tags and text, normalizing Arabic/Persian letters, diacritics, numerals and half-spaces. Category and tag filters combine with search. Direct tag links use `/articles/?tag=...`. Raw MDX is never passed to the search client. Six sample articles keep this index small; consider lazy-loading a JSON index as the collection grows.
+
+## Publish
+
+The public origin is `https://koulivand.ir`. Set `SITE_URL` to that origin before building, for example in a local `.env.production` file. When unset, canonical URLs, sitemap entries and the robots sitemap reference are omitted. Rebuild after changing content or URL.
+
+Pushes to `main` run `.github/workflows/deploy.yml`. The workflow installs dependencies, tests, typechecks, builds the static export with `SITE_URL=https://koulivand.ir`, and publishes `out/` over SSH to the modeno server. The repository secrets `MODENO_HOST` and `MODENO_SSH_KEY` are required. On the server, `deploy/publish.sh` serves the files from the `koulivand-blog` container and reloads the existing Nginx proxy for `koulivand.ir` and `www.koulivand.ir`.
+
+Routes use trailing slashes and `route/index.html`; the host must serve directory indexes. Serve `404.html` for unknown paths rather than rewriting every request to the homepage.
+
+Nginx example:
+
+```nginx
+location / { try_files $uri $uri/ =404; }
+error_page 404 /404.html;
+```
+
+For GitHub Pages add an empty `.nojekyll` file to the uploaded artifact. GitHub project subpaths are not configured: a subpath deployment also requires configuring Next.js `basePath` and prefixing public asset URLs consistently. Use a root/custom-domain deployment with this configuration.
+
+## Checks
+
+`npm test` covers metadata, reading-time fallback, ordering, related articles, normalization and combined search. `npm run typecheck` checks TypeScript. The production build statically renders every article/category and generates `sitemap.xml`, `robots.txt` and the custom 404. Verify keyboard navigation and small-screen layout before publication.
+
+`npm run check-export` checks exported HTML for missing local route and asset references.
+
+### Verification performed
+
+Production export, TypeScript and six content/search tests passed. The latest export inspection verified 17 HTML documents and 598 local route/asset references. Browser checks at the available narrow viewport covered Persian/Arabic search normalization, empty state, clearing filters, tag/category controls, mobile menu, article heading anchors and successful code copying. The reference-led redesign was also visually inspected at 1224 × 1285 and 390 × 844; the mobile view had no horizontal overflow. Set the real `SITE_URL` before publishing; publication has not been performed.
+
+The article detail redesign was checked at 1024px desktop and 390px mobile widths. The exported page loaded the local cover, copied code successfully, followed heading anchors, and opened the mobile table of contents without horizontal overflow. Article cover imagery is locally generated and compressed to WebP.
+
+### Mermaid diagrams
+
+Use a fenced `mermaid` block in article MDX (optionally with `title="..."`). Diagrams are pre-rendered as local SVG and included directly in the generated HTML: no browser JavaScript, loading placeholder, or source disclosure is needed. Wide diagrams scroll inside their frame on mobile.
+
+The renderer uses the first 16 hex digits of the SHA-256 of the exact fence body to locate `public/images/diagrams/mermaid-<hash>.svg`. When changing a diagram, export the updated source as SVG using Mermaid and save it at the new hash path (the build reports the expected path if missing). Only commit SVG exported from trusted local source. This prevents stale images from silently disagreeing with edited Mermaid text. Mermaid is a development dependency, not part of the browser bundle.
