@@ -81,7 +81,10 @@ test("embed route serves latest published content with framing and freshness hea
   assert.ok(!html.includes("/_next/"));
   assert.ok(!html.includes("ناوبری اصلی"));
 });
-function host(attrs: Record<string, string> = {}) {
+function host(attrs: Record<string, string> = {}, adaptive = false) {
+  const messages: any[] = [];
+  const observers: any[] = [];
+  let background = "rgb(8, 12, 24)";
   const listeners = new Set<(event: unknown) => void>();
   const added: any[] = [];
   const element = (tag: string) => ({
@@ -89,7 +92,8 @@ function host(attrs: Record<string, string> = {}) {
     style: {} as Record<string, string>,
     attributes: {} as Record<string, string>,
     children: [] as any[],
-    contentWindow: {},
+    contentWindow: { postMessage(data: unknown, origin: string) { messages.push({data, origin}); } },
+    getBoundingClientRect() { return {height: 0}; },
     setAttribute(key: string, value: string) {
       this.attributes[key] = value;
     },
@@ -119,12 +123,21 @@ function host(attrs: Record<string, string> = {}) {
     removeEventListener: (_type: string, listener: any) =>
       listeners.delete(listener),
   };
+  if (adaptive) {
+    window.getComputedStyle = () => ({backgroundColor: background, color:"rgb(230, 235, 255)",fontFamily:"Tahoma"});
+    window.ResizeObserver = window.MutationObserver = class {
+      disconnected = false;
+      constructor(public callback: () => void) {observers.push(this);}
+      observe() {}
+      disconnect() {this.disconnected = true;}
+    };
+  }
   runInNewContext(readFileSync("public/embed.js", "utf8"), {
     document,
     window,
     URL,
   });
-  return { listeners, added, window, element };
+  return { listeners, added, window, element, messages, observers, setBackground(value: string) {background=value;} };
 }
 test("loader supports attributes, query options and multiple isolated instances", () => {
   const h = host({ "data-theme": "light" });
@@ -161,9 +174,31 @@ test("loader supports attributes, query options and multiple isolated instances"
     });
   assert.equal(frame.style.height, "680px");
   mounted.destroy();
-  assert.equal(h.listeners.size, 1);
+  assert.equal(h.listeners.size, 2);
   assert.throws(
     () => h.window.KoulivandEmbed.mount("#missing"),
     /target element/,
   );
+});
+
+test("host palette overrides fallback theme, reacts to changes and preserves allocated height", () => {
+  const h = host({"data-auto":"false"}, true);
+  const target = h.element("div");
+  let height = 360;
+  target.getBoundingClientRect = () => ({height});
+  const widget = h.window.KoulivandEmbed.mount(target,{theme:"light",layout:"horizontal"});
+  assert.equal(widget.iframe.style.height,"360px");
+  assert.equal(h.messages.at(-1).data.palette.bg,"#080c18");
+  assert.equal(h.messages.at(-1).origin,"https://koulivand.ir");
+  h.setBackground("rgb(234, 241, 251)");
+  height = 280;
+  h.observers[0].callback();
+  assert.equal(widget.iframe.style.height,"280px");
+  assert.equal(h.messages.at(-1).data.palette.bg,"#eaf1fb");
+  assert.equal(h.messages.at(-1).data.palette.ink,"#202830");
+  const id = new URL(widget.iframe.src).searchParams.get("id");
+  for(const fn of h.listeners) fn({origin:"https://koulivand.ir",source:widget.iframe.contentWindow,data:{type:"koulivand:resize",id,height:700}});
+  assert.equal(widget.iframe.style.height,"280px");
+  widget.destroy();
+  assert.ok(h.observers.every(observer=>observer.disconnected));
 });

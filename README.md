@@ -128,3 +128,19 @@ For JavaScript initialization, load the script with `data-auto="false"`, then ca
 The iframe-only content page can also be viewed directly at `/embed/?theme=dark&layout=horizontal`. It has no blog header/footer, uses bundled fonts and images, excludes drafts even in development, and selects the newest publication date (not last edit date). Content updates after new articles are deployed and the host page/iframe reloads; no polling is performed. Horizontal cards stack at narrow widths.
 
 The loader derives the blog origin from its own script URL, supports multiple widgets, validates resize messages against the iframe's origin and window, and adjusts height after image/font loading. Article links open in a new tab. No third-party service or API key is needed. Hosts with Content Security Policy must allow `https://koulivand.ir` in `script-src` and `frame-src`; a fixed host container height can still clip any embed. `/embed/` is intentionally frameable and marked noindex; it is served without caching to keep its article choice fresh. It is a small HTML route handler, not a React page, so it does not load the blog shell or framework bundles.
+
+### هماهنگی embed با سایت میزبان
+
+`embed.js` رنگ پس‌زمینه، متن و لینک را از بلوک میزبان و والدهای آن می‌گیرد؛ بنابراین تطبیق با سایت میزبان بر رنگ‌های پیش‌فرض `light` و `dark` اولویت دارد. تغییر کلاس یا استایل والدها و اندازه بلوک نیز دنبال می‌شود. عرض کارت تمام فضای بلوک را می‌گیرد و در عرض کم، چیدمان افقی به عمودی تبدیل می‌شود.
+
+برای ارتفاع خودکار، بلوک را بدون ارتفاع مشخص قرار دهید. برای فضای با ارتفاع مشخص، از mount در یک بلوک خالی با ارتفاع CSS استفاده کنید:
+
+```html
+<div id="latest-post" style="width:100%;height:360px"></div>
+<script src="https://koulivand.ir/embed.js" data-auto="false"></script>
+<script>
+  KoulivandEmbed.mount('#latest-post', {layout:'horizontal'});
+</script>
+```
+
+در بلوک دارای ارتفاع مشخص، محتوا در همان فضا قرار می‌گیرد و در صورت کمبود فضا قسمت متن قابل پیمایش است. گزینه `height: 'auto'` ارتفاع را همیشه بر اساس محتوا تنظیم می‌کند. لینک مستقیم `/embed/` بدون loader همچنان از تم انتخابی استفاده می‌کند. اسکریپت تنها رنگ‌ها و نام فونت محاسبه‌شده و اندازه بلوک را به iframe می‌فرستد.
