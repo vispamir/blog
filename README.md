@@ -90,3 +90,41 @@ The renderer uses the first 16 hex digits of the SHA-256 of the exact fence body
 `public/share-cards/` contains one 1200×800 JPG for each published article. `index.json` maps cards to article URLs. Article Open Graph and Twitter metadata use these images, so sharing an article URL also exposes its card to social crawlers.
 
 The editable layout is in `scripts/prepare-share-cards.ts`. Run `npx tsx scripts/prepare-share-cards.ts` to prepare six local HTML previews under `.cache/share-card-preview/` and refresh the manifest. Serve that directory locally and render each preview at exactly 1200×800 after fonts/images load; save each capture as `public/share-cards/<slug>.jpg`. Regenerate after title, description, category, photo or reading-time changes. The preview directory is excluded from Git and Docker builds.
+
+## Embed the latest article on another website
+
+Place this snippet in the host page's body where the widget should appear:
+
+```html
+<script
+  async
+  src="https://koulivand.ir/embed.js"
+  data-theme="light"
+  data-layout="vertical"
+></script>
+```
+
+`data-theme` accepts `light` (default) or `dark`. `data-layout` accepts `vertical` (default), `horizontal`, or the equivalent `horizental` spelling. Attribute values take precedence over script URL query options:
+
+```html
+<script async src="https://koulivand.ir/embed.js?theme=dark&layout=horizental"></script>
+```
+
+For JavaScript initialization, load the script with `data-auto="false"`, then call its API after it loads:
+
+```html
+<div id="latest-post"></div>
+<script src="https://koulivand.ir/embed.js" data-auto="false"></script>
+<script>
+  const widget = KoulivandEmbed.mount('#latest-post', {
+    theme: 'dark',
+    layout: 'horizontal'
+  });
+  // When removing a dynamically mounted widget:
+  // widget.destroy();
+</script>
+```
+
+The iframe-only content page can also be viewed directly at `/embed/?theme=dark&layout=horizontal`. It has no blog header/footer, uses bundled fonts and images, excludes drafts even in development, and selects the newest publication date (not last edit date). Content updates after new articles are deployed and the host page/iframe reloads; no polling is performed. Horizontal cards stack at narrow widths.
+
+The loader derives the blog origin from its own script URL, supports multiple widgets, validates resize messages against the iframe's origin and window, and adjusts height after image/font loading. Article links open in a new tab. No third-party service or API key is needed. Hosts with Content Security Policy must allow `https://koulivand.ir` in `script-src` and `frame-src`; a fixed host container height can still clip any embed. `/embed/` is intentionally frameable and marked noindex; it is served without caching to keep its article choice fresh. It is a small HTML route handler, not a React page, so it does not load the blog shell or framework bundles.
