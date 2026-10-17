@@ -8,3 +8,5 @@ docs
 *.tsbuildinfo
 .env*
 !.env.example
+
+.cache

@@ -1,0 +1,50 @@
+[
+  {
+    "slug": "software-architecture",
+    "title": "معماری نرم‌افزار؛ چند گام کوچک سطحی برای درک بهتر",
+    "articleUrl": "https://koulivand.ir/articles/software-architecture/",
+    "image": "/share-cards/software-architecture.jpg",
+    "width": 1200,
+    "height": 800
+  },
+  {
+    "slug": "microservices",
+    "title": "معماری میکرو یا مایکرو، سرویس‌گرایی بی انتها",
+    "articleUrl": "https://koulivand.ir/articles/microservices/",
+    "image": "/share-cards/microservices.jpg",
+    "width": 1200,
+    "height": 800
+  },
+  {
+    "slug": "engineering-interview",
+    "title": "بیمه تعبیه‌شده، ایده دانی بیمه‌گری",
+    "articleUrl": "https://koulivand.ir/articles/engineering-interview/",
+    "image": "/share-cards/engineering-interview.jpg",
+    "width": 1200,
+    "height": 800
+  },
+  {
+    "slug": "technical-leadership",
+    "title": "مسیر رشد تنها از مدیر فنی به مدیر فنی خوب و از توسعه دهنده به توسعه دهنده خوب",
+    "articleUrl": "https://koulivand.ir/articles/technical-leadership/",
+    "image": "/share-cards/technical-leadership.jpg",
+    "width": 1200,
+    "height": 800
+  },
+  {
+    "slug": "validate-business-idea",
+    "title": "چگونه یک ایده‌ی کسب‌وکار نرم‌افزاری را اعتبارسنجی کنیم؟",
+    "articleUrl": "https://koulivand.ir/articles/validate-business-idea/",
+    "image": "/share-cards/validate-business-idea.jpg",
+    "width": 1200,
+    "height": 800
+  },
+  {
+    "slug": "payment-infrastructure",
+    "title": "فرصت‌های ساخت محصول در زیرساخت پرداخت و فین‌تک",
+    "articleUrl": "https://koulivand.ir/articles/payment-infrastructure/",
+    "image": "/share-cards/payment-infrastructure.jpg",
+    "width": 1200,
+    "height": 800
+  }
+]

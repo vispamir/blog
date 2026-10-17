@@ -84,3 +84,9 @@ The article detail redesign was checked at 1024px desktop and 390px mobile width
 Use a fenced `mermaid` block in article MDX (optionally with `title="..."`). Diagrams are pre-rendered as local SVG and included directly in the generated HTML: no browser JavaScript, loading placeholder, or source disclosure is needed. Wide diagrams scroll inside their frame on mobile.
 
 The renderer uses the first 16 hex digits of the SHA-256 of the exact fence body to locate `public/images/diagrams/mermaid-<hash>.svg`. When changing a diagram, export the updated source as SVG using Mermaid and save it at the new hash path (the build reports the expected path if missing). Only commit SVG exported from trusted local source. This prevents stale images from silently disagreeing with edited Mermaid text. Mermaid is a development dependency, not part of the browser bundle.
+
+## LinkedIn share cards
+
+`public/share-cards/` contains one 1200×800 JPG for each published article. `index.json` maps cards to article URLs. Article Open Graph and Twitter metadata use these images, so sharing an article URL also exposes its card to social crawlers.
+
+The editable layout is in `scripts/prepare-share-cards.ts`. Run `npx tsx scripts/prepare-share-cards.ts` to prepare six local HTML previews under `.cache/share-card-preview/` and refresh the manifest. Serve that directory locally and render each preview at exactly 1200×800 after fonts/images load; save each capture as `public/share-cards/<slug>.jpg`. Regenerate after title, description, category, photo or reading-time changes. The preview directory is excluded from Git and Docker builds.

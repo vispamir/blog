@@ -42,8 +42,24 @@ export async function generateMetadata({
       modifiedTime: a.updatedAt,
       authors: [site.name],
       url: absolute(`/articles/${slug}/`),
+      images: [
+        {
+          url:
+            absolute(`/share-cards/${slug}.jpg`) ?? `/share-cards/${slug}.jpg`,
+          width: 1200,
+          height: 800,
+          alt: a.title,
+        },
+      ],
     },
-    twitter: { card: "summary", title: a.title, description: a.description },
+    twitter: {
+      card: "summary_large_image",
+      title: a.title,
+      description: a.description,
+      images: [
+        absolute(`/share-cards/${slug}.jpg`) ?? `/share-cards/${slug}.jpg`,
+      ],
+    },
   };
 }
 export default async function ArticlePage({
