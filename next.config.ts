@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 const config: NextConfig = {
-  output: "export",
+  output: "standalone",
   trailingSlash: true,
   images: { unoptimized: true },
+  outputFileTracingIncludes: {
+    "/*": ["./content/articles/**/*", "./public/images/diagrams/**/*"],
+  },
 };
 export default config;

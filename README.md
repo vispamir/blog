@@ -20,7 +20,7 @@ npm run build
 npm run preview
 ```
 
-`npm run build` exports the full website to `out/`. Production needs only a static file server, never `next start`.
+`npm run build` writes a standalone Next.js server. `npm run preview` serves it with `next start`.
 
 ## Add or edit an article
 
@@ -61,24 +61,17 @@ The initial release uses a light theme. No theme, newsletter, comments or contac
 
 The public origin is `https://koulivand.ir`. Set `SITE_URL` to that origin before building, for example in a local `.env.production` file. When unset, canonical URLs, sitemap entries and the robots sitemap reference are omitted. Rebuild after changing content or URL.
 
-Pushes to `main` run `.github/workflows/deploy.yml`. The workflow installs dependencies, tests, typechecks, builds the static export with `SITE_URL=https://koulivand.ir`, and publishes `out/` over SSH to the modeno server. The repository secrets `MODENO_HOST` and `MODENO_SSH_KEY` are required. On the server, `deploy/publish.sh` serves the files from the `koulivand-blog` container and reloads the existing Nginx proxy for `koulivand.ir` and `www.koulivand.ir`.
+Pushes to `main` run `.github/workflows/deploy.yml`. The workflow tests and typechecks, then builds the image `koulivand/blog` on the modeno server. Watchtower, already running with `--label-enable --no-pull`, replaces the `koulivand-blog` container when that local production tag changes. The repository secrets `MODENO_HOST` and `MODENO_SSH_KEY` are required.
 
-Routes use trailing slashes and `route/index.html`; the host must serve directory indexes. Serve `404.html` for unknown paths rather than rewriting every request to the homepage.
+The container runs Next.js on port 3000 and publishes it at `127.0.0.1:18084` on the server. The server Nginx proxies `koulivand.ir` and `www.koulivand.ir` to that process. The app container does not run Nginx.
 
-Nginx example:
-
-```nginx
-location / { try_files $uri $uri/ =404; }
-error_page 404 /404.html;
-```
+Routes use trailing slashes. Unknown paths are the Next.js 404 page.
 
 For GitHub Pages add an empty `.nojekyll` file to the uploaded artifact. GitHub project subpaths are not configured: a subpath deployment also requires configuring Next.js `basePath` and prefixing public asset URLs consistently. Use a root/custom-domain deployment with this configuration.
 
 ## Checks
 
 `npm test` covers metadata, reading-time fallback, ordering, related articles, normalization and combined search. `npm run typecheck` checks TypeScript. The production build statically renders every article/category and generates `sitemap.xml`, `robots.txt` and the custom 404. Verify keyboard navigation and small-screen layout before publication.
-
-`npm run check-export` checks exported HTML for missing local route and asset references.
 
 ### Verification performed
 

@@ -16,7 +16,7 @@ jobs:
   deploy:
     name: Build and publish
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     env:
       SITE_URL: https://koulivand.ir
       NEXT_TELEMETRY_DISABLED: "1"
@@ -39,13 +39,10 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Build static export
+      - name: Build Next.js
         run: npm run build
 
-      - name: Check export
-        run: npm run check-export
-
-      - name: Publish to modeno
+      - name: Build image on modeno
         env:
           MODENO_HOST: ${{ secrets.MODENO_HOST }}
           MODENO_SSH_KEY: ${{ secrets.MODENO_SSH_KEY }}
@@ -60,7 +57,11 @@ jobs:
           chmod 600 "${HOME}/.ssh/id_ed25519"
           ssh-keyscan -H "${MODENO_HOST}" >> "${HOME}/.ssh/known_hosts"
           SSH=(ssh -i "${HOME}/.ssh/id_ed25519" -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes)
-          "${SSH[@]}" "root@${MODENO_HOST}" "mkdir -p /opt/koulivand/blog/html"
-          tar -C out -czf - . | "${SSH[@]}" "root@${MODENO_HOST}" "find /opt/koulivand/blog/html -mindepth 1 -delete && tar -C /opt/koulivand/blog/html -xzf - && find /opt/koulivand/blog/html -type d -exec chmod 755 {} + && find /opt/koulivand/blog/html -type f -exec chmod 644 {} +"
-          tar -C deploy -czf - nginx.conf docker-compose.yml proxy.conf publish.sh | "${SSH[@]}" "root@${MODENO_HOST}" "tar -C /opt/koulivand/blog -xzf -"
-          "${SSH[@]}" "root@${MODENO_HOST}" "bash /opt/koulivand/blog/publish.sh"
+          "${SSH[@]}" "root@${MODENO_HOST}" "rm -rf /opt/koulivand/src && mkdir -p /opt/koulivand/src"
+          tar -czf - \
+            --exclude node_modules \
+            --exclude .next \
+            --exclude out \
+            --exclude .git \
+            . | "${SSH[@]}" "root@${MODENO_HOST}" "tar -xzf - -C /opt/koulivand/src"
+          "${SSH[@]}" "root@${MODENO_HOST}" "docker build --label org.opencontainers.image.revision=${GITHUB_SHA} -t koulivand/blog:${GITHUB_SHA} /opt/koulivand/src && docker tag koulivand/blog:${GITHUB_SHA} koulivand/blog:production && bash /opt/koulivand/src/deploy/deploy.sh"
