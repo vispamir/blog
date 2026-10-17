@@ -35,6 +35,13 @@
     frame.style.display = "block";
     frame.style.width = "100%";
     frame.style.border = "0";
+    frame.style.padding = "0";
+    frame.style.margin = "0";
+    frame.style.boxSizing = "border-box";
+    frame.style.maxWidth = "100%";
+    frame.style.borderRadius = "6px";
+    frame.style.overflow = "hidden";
+    frame.style.clipPath = "inset(0 round 6px)";
     frame.style.height = layout === "vertical" ? "560px" : "290px";
     frame.style.colorScheme = theme;
     var disposed = false;
@@ -81,7 +88,7 @@
       if (height) frame.style.height = height + "px";
       frame.style.background = palette.bg;
       frame.style.colorScheme = dark ? "dark" : "light";
-      var data = {type:"koulivand:host",id:id,palette:palette,font:style.fontFamily,height:height};
+      var data = {type:"koulivand:host",id:id,palette:palette,scheme:dark ? "dark" : "light",font:style.fontFamily,height:height};
       var key = JSON.stringify(data);
       if (key !== paletteKey) { paletteKey = key; frame.contentWindow.postMessage(data, origin); }
     }
